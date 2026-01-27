@@ -25,11 +25,14 @@ from .common import RESOURCE_MAP, DEFAULT_VERSION
 # Import all required modules.
 from .adaptor_base import AdaptorBase, RadioOutput, AdaptorInput
 from .adaptor_generic import GenericAdaptor, AdaptorBase
-from .adaptor_mlp import create_mlp_from_config
+from .adaptor_module_factory import create_mlp_from_config
+from .adaptor_mlp import MLP, MLP2
+from .adaptor_attn import AttnFDHead
 from .adaptor_registry import adaptor_registry
 from .cls_token import ClsToken
 from .dinov2_arch import dinov2_vitg14_reg
 from .enable_cpe_support import enable_cpe
+from .enable_damp import configure_damp_from_args
 from .enable_spectral_reparam import configure_spectral_reparam_from_args
 from .eradio_model import eradio
 from .feature_normalizer import FeatureNormalizer, IntermediateFeatureNormalizer
@@ -38,6 +41,7 @@ from .radio_model import create_model_from_args
 from .radio_model import RADIOModel as RADIOModelBase, Resolution
 from .input_conditioner import get_default_conditioner, InputConditioner
 from .open_clip_adaptor import OpenCLIP_RADIO
+from .siglip2_adaptor import SigLIP2Adaptor
 from .vit_patch_generator import ViTPatchGenerator
 from .vitdet import apply_vitdet_arch, VitDetArgs
 

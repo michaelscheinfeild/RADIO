@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2026, NVIDIA CORPORATION.  All rights reserved.
 #
 # NVIDIA CORPORATION and its licensors retain all intellectual property
 # and proprietary rights in and to this software, related documentation
@@ -15,12 +15,13 @@ from einops import rearrange
 from timm.models.vision_transformer import Block
 
 from .enable_spectral_reparam import disable_spectral_reparam, enable_spectral_reparam
+from .adaptor_base import AdaptorModuleBase
 
 
-class MLP(nn.Module):
+class MLP(AdaptorModuleBase):
     def __init__(self, input_size: int, hidden_size: int, output_size: int,
                  num_inner: int = 0, device: torch.device = None, **kwargs):
-        super(MLP, self).__init__()
+        super(MLP, self).__init__(requires_summary_and_spatial=False)
         self.fc1 = nn.Linear(input_size, hidden_size, device=device)
         self.norm = nn.LayerNorm(hidden_size, device=device)
         self.relu = nn.ReLU()
@@ -48,7 +49,7 @@ class MLP(nn.Module):
         return x
 
 
-class MLP2(nn.Module):
+class MLP2(AdaptorModuleBase):
     def __init__(self, input_size: int, hidden_size: int, output_size: int,
                  num_inner: int = 0,
                  pre_norm: bool = False, device: torch.device = None,
@@ -56,7 +57,7 @@ class MLP2(nn.Module):
                  upsample_rank: int = None,
                  from_config: bool = False,
                  **kwargs):
-        super().__init__()
+        super().__init__(requires_summary_and_spatial=False)
 
         self.pre_norm = nn.Sequential(
             nn.LayerNorm(input_size),
@@ -106,69 +107,3 @@ class MLP2(nn.Module):
                           c=self._real_output_dim)
 
         return x
-
-
-MLP_FACTORY = {
-    'v1': MLP,
-    'v2': MLP2,
-}
-
-
-def strip_prefix(state: Dict[str, torch.Tensor], prefix: str):
-    state = {
-        k[len(prefix):]: v
-        for k, v in state.items()
-        if k.startswith(prefix)
-    }
-    return state
-
-
-def get_mlp_info_from_state(version: str, state: Dict[str, torch.Tensor], prefix: str = '', spectral_weights: bool = False):
-    state = strip_prefix(state, prefix)
-
-    weight_suffix = 'weight' if not spectral_weights else 'parametrizations.weight.original'
-
-    if version == 'v1':
-        hidden_dim, input_dim = state[f'fc1.{weight_suffix}'].shape
-        output_dim = state[f'fc2.{weight_suffix}'].shape[0]
-
-        for num_inner in range(1000):
-            k = f'inner.{num_inner}.0.weight'
-            if k not in state:
-                break
-    elif version == 'v2':
-        hidden_dim, input_dim = state[f'fc1.{weight_suffix}'].shape
-        output_dim = state[f'final.2.{weight_suffix}'].shape[0]
-
-        for num_inner in range(1000):
-            k = f'blocks.{num_inner}.0.weight'
-            if k not in state:
-                break
-    else:
-        raise ValueError(f'Unsupported MLP version: {version}')
-
-    return input_dim, hidden_dim, output_dim, num_inner
-
-
-def create_mlp_from_config(version: str, input_dim: int, hidden_dim: int, output_dim: int, num_inner: int, **kwargs):
-    ret: nn.Module = MLP_FACTORY[version](input_dim, hidden_dim, output_dim, num_inner, from_config=True, **kwargs)
-
-    return ret
-
-
-def create_mlp_from_state(version: str, state: Dict[str, torch.Tensor], prefix: str = '', spectral_weights: bool = False, **kwargs):
-    state = strip_prefix(state, prefix)
-
-    input_dim, hidden_dim, output_dim, num_inner = get_mlp_info_from_state(version, state, spectral_weights=spectral_weights)
-
-    ret: nn.Module = create_mlp_from_config(version, input_dim, hidden_dim, output_dim, num_inner, **kwargs)
-
-    if spectral_weights:
-        enable_spectral_reparam(ret, init_norm_to_current=False, state_dict_guidance=state)
-
-    ret.load_state_dict(state)
-
-    if spectral_weights:
-        disable_spectral_reparam(ret)
-
-    return ret

@@ -20,7 +20,7 @@ import torch
 from hubconf import get_prefix_state_dict
 from radio.adaptor_base import RadioOutput
 from radio.adaptor_registry import adaptor_registry
-from radio.adaptor_mlp import get_mlp_info_from_state
+from radio.adaptor_module_factory import get_mlp_info_from_state
 from radio.hf_model import RADIOConfig, RADIOModel
 from test_hf import deterministic_grid_init
 
@@ -102,6 +102,8 @@ def main():
         state_dict = checkpoint["state_dict_ema"]
         # Disable spectral reparametrization for EMA model.
         model_args.spectral_reparam = False
+        model_args.spectral_heads = False
+        model_args.damp = None
     else:
         state_dict = checkpoint["state_dict"]
     state_dict = clean_state_dict(state_dict)
