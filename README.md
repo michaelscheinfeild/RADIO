@@ -145,7 +145,8 @@ Now, also supported as a [Foundation Model in TAO Toolkit](https://docs.nvidia.c
 
 ## News/Release
 
-- [1.27.2025] C-RADIOv4 has been released.
+- [1.29.2026] RADSeg code was open sourced. [Code](https://github.com/RADSeg-OVSS/RADSeg) [Paper](https://arxiv.org/abs/2511.19704)
+- [1.27.2026] C-RADIOv4 has been released.
     - Load via TorchHub or
     - HuggingFace: [C-RADIOv4-SO400M](https://huggingface.co/nvidia/C-RADIOv4-SO400M) [C-RADIOv4-H](https://huggingface.co/nvidia/C-RADIOv4-H)
 - [11.26.2025] [RADSeg](https://arxiv.org/abs/2511.19704): Shout out to Alama, Jariwala, Bhattacharya et al. who have pushed RADIO even further in the domain of Open Vocabulary Semantic Segmentation in both the 2D and 3D domains. They've strongly set the SOTA, both in raw metrics, and especially on pareto, running significantly faster than nearby competitors.
