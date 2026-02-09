@@ -150,7 +150,7 @@ RESOURCE_MAP = {
         patch_size=16,
         max_resolution=2048,
         preferred_resolution=Resolution(512, 512),
-        supports_vitdet=False,
+        supports_vitdet=True,
     ),
     "c-radio_v4-h": RadioResource(
         # NOTE: C-RADIO models are bound by different license terms than that present in the LICENSE file.
@@ -159,7 +159,7 @@ RESOURCE_MAP = {
         patch_size=16,
         max_resolution=2048,
         preferred_resolution=Resolution(512, 512),
-        supports_vitdet=False,
+        supports_vitdet=True,
     ),
 }
 
