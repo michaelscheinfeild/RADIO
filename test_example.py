@@ -1,3 +1,38 @@
+'''
+
+
+summary.shape
+torch.Size([1, 2560])
+spatial_features.shape
+torch.Size([1, 2500, 1280])
+summary.shape
+torch.Size([1, 2560])
+spatial_features.shape
+torch.Size([1, 1280, 50, 50])
+spatial_features.shape
+torch.Size([1, 2500, 1280])
+
+
+Adaptors are lightweight head networks that transform RADIO's backbone features into the representation space of a specific teacher model that RADIO was trained to mimic.
+
+RADIO was trained via distillation from multiple teacher models (SigLIP2, CLIP, DINOv2, SAM, etc.). The backbone learns a general representation, but each teacher had its own output format. An adaptor is a small projection network (MLP or attention head) that converts RADIO's backbone features into the format matching a particular teacher.
+
+What adaptor_names does
+When you pass adaptor_names=['siglip2-g'], it:
+
+Looks up 'siglip2-g' in the checkpoint's list of teachers (hubconf.py:119-126)
+Loads the corresponding adaptor weights (summary head + feature projection)
+Creates the adaptor module via the registry (adaptor_registry.py:32-36)
+Attaches it to the model
+
+
+The SigLIP2/CLIP adaptors are special because they also provide
+ tokenizer and encode_text() methods, enabling text-image similarity (zero-shot classification, retrieval, etc.) — which is what lines 58-63 of your script demonstrate.
+
+The available adaptor names depend on the model version. 
+You can find them by inspecting chk['args'].teachers in the checkpoint.
+
+'''
 import os
 from PIL import Image
 
@@ -5,6 +40,7 @@ import torch
 from torch.nn import functional as F
 from torchvision.transforms.functional import pil_to_tensor
 repo = 'NVlabs/RADIO'
+repo = r'C:\github\RADIO'  # absolute path to local clone of the repository, if available. If not, it will be downloaded from GitHub automatically.
 source = 'local' if os.path.exists(repo) else 'github'
 
 model_version="c-radio_v4-h" # for C-RADIOv4-H model (ViT-H/16)
