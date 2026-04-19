@@ -40,6 +40,7 @@ REPO = r"C:\github\RADIO"
 MODEL_VERSION = "c-radio_v4-h"
 
 GOOD_DIST_M = 1500.0
+FILTER_DIST_M = 5000.0
 TOP_PLOT_K = 5
 TOP_STATS = (5, 10)
 
@@ -316,6 +317,85 @@ def save_stats_and_hist(
     plt.savefig(OUT_ROOT / f"hist_similarity_{tag}.png", dpi=180)
     plt.close()
 
+    # Bar chart: number of correct matches in top-K per query
+    _plot_topk_correct_per_query(query_df, sim, dist, good_dist_m, tag, top_k=5)
+    _plot_topk_correct_per_query(query_df, sim, dist, good_dist_m, tag, top_k=10)
+
+
+def _plot_topk_correct_per_query(
+    query_df: pd.DataFrame,
+    sim: np.ndarray,
+    dist: np.ndarray,
+    good_dist_m: float,
+    tag: str,
+    top_k: int = 5,
+) -> None:
+    """Bar chart showing how many of the top-K retrieved gallery items are correct per query."""
+    n_q = sim.shape[0]
+    correct_counts = np.zeros(n_q, dtype=np.int32)
+    for qi in range(n_q):
+        rank = np.argsort(-sim[qi])[:top_k]
+        correct_counts[qi] = int(np.sum(dist[qi, rank] <= good_dist_m))
+
+    frame_ids = query_df["frame_id"].to_numpy(dtype=np.int32)
+    x = np.arange(n_q)
+
+    # Per-query bar chart
+    colors = ["green" if c > 0 else "red" for c in correct_counts]
+    fig, ax = plt.subplots(figsize=(max(8, n_q * 0.45), 5))
+    ax.bar(x, correct_counts, color=colors, edgecolor="black", linewidth=0.5)
+    ax.set_xticks(x)
+    ax.set_xticklabels([str(f) for f in frame_ids], rotation=90, fontsize=7)
+    ax.set_xlabel("Query frame ID")
+    ax.set_ylabel(f"# correct in top-{top_k}")
+    ax.set_ylim(0, top_k + 0.5)
+    ax.set_yticks(range(top_k + 1))
+    mean_correct = correct_counts.mean()
+    n_with_hit = int(np.sum(correct_counts > 0))
+    ax.set_title(
+        f"Correct matches in top-{top_k} per query — {tag}\n"
+        f"mean={mean_correct:.2f}  queries with ≥1 hit: {n_with_hit}/{n_q} ({n_with_hit/n_q*100:.1f}%)"
+    )
+    ax.axhline(mean_correct, color="blue", linestyle="--", linewidth=1, label=f"mean={mean_correct:.2f}")
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(OUT_ROOT / f"correct_top{top_k}_per_query_{tag}.png", dpi=180)
+    plt.close(fig)
+
+    # Distribution histogram: how many queries got 0,1,2,...,K correct
+    fig2, ax2 = plt.subplots(figsize=(7, 5))
+    bins = np.arange(top_k + 2) - 0.5
+    ax2.hist(correct_counts, bins=bins, color="steelblue", edgecolor="black", rwidth=0.8)
+    ax2.set_xticks(range(top_k + 1))
+    ax2.set_xlabel(f"# correct in top-{top_k}")
+    ax2.set_ylabel("# queries")
+    ax2.set_title(f"Distribution of correct matches in top-{top_k} — {tag}")
+    fig2.tight_layout()
+    fig2.savefig(OUT_ROOT / f"correct_top{top_k}_distribution_{tag}.png", dpi=180)
+    plt.close(fig2)
+
+
+# ── Filtered similarity ────────────────────────────────────────────────────────
+def filter_similarity_by_distance(sim: np.ndarray, dist: np.ndarray, max_dist_m: float) -> np.ndarray:
+    """Zero out similarity for gallery items farther than max_dist_m from each query."""
+    filtered = sim.copy()
+    filtered[dist > max_dist_m] = -1.0
+    return filtered
+
+
+def compute_filtered_success(sim_filtered: np.ndarray, dist: np.ndarray, hit_dist_m: float) -> Dict[str, np.ndarray]:
+    """Compute top-5/top-10 hit rates on the filtered similarity matrix."""
+    n_q = sim_filtered.shape[0]
+    success_top5 = np.zeros(n_q, dtype=np.int32)
+    success_top10 = np.zeros(n_q, dtype=np.int32)
+    for qi in range(n_q):
+        rank = np.argsort(-sim_filtered[qi])
+        top5_idx = rank[:5]
+        top10_idx = rank[:10]
+        success_top5[qi] = int(np.any(dist[qi, top5_idx] <= hit_dist_m))
+        success_top10[qi] = int(np.any(dist[qi, top10_idx] <= hit_dist_m))
+    return {"success_top5": success_top5, "success_top10": success_top10}
+
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
@@ -368,7 +448,7 @@ def main():
         hit_dist_m=GOOD_DIST_M,
     )
 
-    # 7. Save statistics and histogram
+    # 7. Save statistics and histogram (all gallery)
     save_stats_and_hist(
         query_df=query_df,
         gallery_df=gallery_df,
@@ -377,6 +457,20 @@ def main():
         success=success,
         good_dist_m=GOOD_DIST_M,
         tag="radio_ir_vs_vis",
+    )
+
+    # 8. Filtered statistics — only gallery within FILTER_DIST_M of each query
+    print(f"Computing filtered stats (gallery <= {FILTER_DIST_M/1000:.0f}km)...")
+    sim_filtered = filter_similarity_by_distance(sim, dist, FILTER_DIST_M)
+    success_filtered = compute_filtered_success(sim_filtered, dist, hit_dist_m=GOOD_DIST_M)
+    save_stats_and_hist(
+        query_df=query_df,
+        gallery_df=gallery_df,
+        sim=sim_filtered,
+        dist=dist,
+        success=success_filtered,
+        good_dist_m=GOOD_DIST_M,
+        tag=f"radio_ir_vs_vis_filtered_{FILTER_DIST_M/1000:.0f}km",
     )
 
     print("Done! Results saved to:", OUT_ROOT)
