@@ -9,7 +9,8 @@ from torch.nn import functional as F
 from torchvision.transforms.functional import pil_to_tensor
 
 # --- Configuration ---
-dbIr = r"D:\OrthoCrop\tifquery"
+#dbIr = r"D:\OrthoCrop\tifquery"
+dbIr = r"D:\OrthoAshdod2\tifquery"
 frames = [1690, 1750, 1870, 1990, 2050, 2710, 2770]
 
 REPO = r"C:\github\RADIO"
@@ -150,3 +151,4 @@ if __name__ == "__main__":
 
     # 6) Display per-query rankings
     display_query_rankings(images, sim_matrix)
+    print("That's all folks!")

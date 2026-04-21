@@ -24,7 +24,9 @@ from torch.nn import functional as F
 from torchvision.transforms.functional import pil_to_tensor
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-BASE_ROOT = Path(r"D:\OrthoCropAshdodHuge")
+#BASE_ROOT = Path(r"D:\OrthoCropAshdodHuge")
+BASE_ROOT = Path(r"D:\OneDrive - Israel Aerospace Industries\Databases\OrthoCropWingateHuge")
+
 DATA_ROOT = BASE_ROOT / "data" / "ortho"
 
 GALLERY_TXT = DATA_ROOT / "test_gallery.txt"

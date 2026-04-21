@@ -427,3 +427,31 @@ url={https://openreview.net/forum?id=lioemOcq3H}
 Copyright © 2024, NVIDIA Corporation. All rights reserved.
 
 This work is made available under the NVIDIA Source Code License-NC. Click [here](LICENSE) to view a copy of this license.
+
+
+
+# install 
+micromamba install python=3.10 -c conda-forge -y
+
+ftfy==6.1.3
+huggingface-hub==0.19.4
+opencv-python==4.6.0.66
+openmim==0.3.9
+mmcv==2.1.0
+mmengine==0.10.1
+mmsegmentation==1.2.1
+timm==0.9.12
+transformers==4.35.2
+yapf==0.40.1
+
+
+# micromamba install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
+
+micromamba install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -c conda-forge -y
+
+pip install --upgrade setuptools pipv
+
+
+mim install mmengine==0.10.1
+mim install mmcv==2.1.0
+mim install mmsegmentation==1.2.1
